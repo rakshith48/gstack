@@ -132,37 +132,48 @@ export function _resetFetchHint(): void {
   browserFallbackHintShown = false;
 }
 
-interface FetchFormats {
+interface FetchOpts {
   html: boolean;
   links: boolean;
+  full: boolean;   // --full → onlyMainContent:false (whole page, not just the main region)
+  wait?: number;   // --wait <ms> → Firecrawl waitFor, for slow JS renders
 }
 
-interface ParsedFetchArgs extends FetchFormats {
+interface ParsedFetchArgs extends FetchOpts {
   url: string;
   engine: WebEngine; // from --engine; 'auto' when unspecified
 }
 
-/** Parse `fetch <url> [--html] [--links] [--engine firecrawl|browser|auto]`. */
+/** Parse `fetch <url> [--html] [--links] [--full] [--wait <ms>] [--engine firecrawl|browser|auto]`. */
 export function parseFetchArgs(args: string[]): ParsedFetchArgs {
   let engine: WebEngine = 'auto';
   let html = false;
   let links = false;
+  let full = false;
+  let wait: number | undefined;
   const positional: string[] = [];
 
   const setEngine = (v: string | undefined): void => {
     if (v === 'firecrawl' || v === 'browser' || v === 'auto') engine = v;
+  };
+  const setWait = (v: string | undefined): void => {
+    const n = parseInt(v ?? '', 10);
+    if (!Number.isNaN(n) && n >= 0) wait = n;
   };
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--html') html = true;
     else if (a === '--links') links = true;
+    else if (a === '--full') full = true;
+    else if (a === '--wait') setWait(args[++i]);
+    else if (a.startsWith('--wait=')) setWait(a.slice('--wait='.length));
     else if (a === '--engine') setEngine(args[++i]);
     else if (a.startsWith('--engine=')) setEngine(a.slice('--engine='.length));
     else positional.push(a);
   }
 
-  return { url: positional[0] ?? '', engine, html, links };
+  return { url: positional[0] ?? '', engine, html, links, full, wait };
 }
 
 /** Firecrawl returned nothing usable (login wall, JS-gated SPA) → fall back. */
@@ -170,12 +181,18 @@ function isEmptyMarkdown(md: string | undefined): boolean {
   return !md || md.trim().length < 8;
 }
 
-async function fetchViaFirecrawl(url: string, opts: FetchFormats): Promise<NormalizedFetchResult> {
+async function fetchViaFirecrawl(url: string, opts: FetchOpts): Promise<NormalizedFetchResult> {
   const formats: Array<'markdown' | 'links' | 'html'> = ['markdown'];
   if (opts.links) formats.push('links');
   if (opts.html) formats.push('html');
 
-  const doc = await getFirecrawl().scrape(url, { formats, onlyMainContent: true });
+  const doc = await getFirecrawl().scrape(url, {
+    formats,
+    onlyMainContent: !opts.full,  // --full → whole page (skip main-content extraction)
+    removeBase64Images: true,     // keep inline base64 data-URIs out of the markdown
+    parsers: ['pdf'],             // parse PDF URLs to text instead of returning binary
+    ...(opts.wait !== undefined ? { waitFor: opts.wait } : {}),
+  });
   return {
     url: doc.metadata?.sourceURL ?? url,
     title: doc.metadata?.title ?? undefined,
@@ -192,7 +209,7 @@ async function fetchViaFirecrawl(url: string, opts: FetchFormats): Promise<Norma
  * `engine: 'browser'` flag signals that to consumers. Navigation is gated by
  * validateNavigationUrl (same SSRF guard as `$B goto`).
  */
-async function fetchViaBrowser(url: string, session: TabSession, opts: FetchFormats): Promise<NormalizedFetchResult> {
+async function fetchViaBrowser(url: string, session: TabSession, opts: FetchOpts): Promise<NormalizedFetchResult> {
   const normalized = await validateNavigationUrl(url);
   const page = session.getPage();
   await page.goto(normalized, { waitUntil: 'domcontentloaded', timeout: 15000 });
@@ -218,11 +235,11 @@ async function fetchViaBrowser(url: string, session: TabSession, opts: FetchForm
  * browser (no nagging — the browser already fetches URLs well).
  */
 export async function firecrawlFetch(args: string[], session: TabSession): Promise<string> {
-  const { url, engine, html, links } = parseFetchArgs(args);
+  const { url, engine, html, links, full, wait } = parseFetchArgs(args);
   if (!url) {
-    throw new Error('Usage: browse fetch <url> [--html] [--links] [--engine firecrawl|browser]');
+    throw new Error('Usage: browse fetch <url> [--html] [--links] [--full] [--wait <ms>] [--engine firecrawl|browser]');
   }
-  const opts: FetchFormats = { html, links };
+  const opts: FetchOpts = { html, links, full, wait };
   const effective: WebEngine = engine !== 'auto' ? engine : getWebEngine();
 
   let result: NormalizedFetchResult;

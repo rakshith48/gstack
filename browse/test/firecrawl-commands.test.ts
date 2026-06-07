@@ -46,12 +46,14 @@ describe('parseSearchArgs', () => {
 });
 
 describe('parseFetchArgs', () => {
-  test('bare url → auto engine, no html/links', () => {
+  test('bare url → auto engine, no flags', () => {
     expect(parseFetchArgs(['https://a.dev'])).toEqual({
       url: 'https://a.dev',
       engine: 'auto',
       html: false,
       links: false,
+      full: false,
+      wait: undefined,
     });
   });
 
@@ -60,6 +62,16 @@ describe('parseFetchArgs', () => {
       html: true,
       links: true,
     });
+  });
+
+  test('--full flag', () => {
+    expect(parseFetchArgs(['https://a.dev', '--full']).full).toBe(true);
+  });
+
+  test('--wait <ms> (space + equals forms), rejects non-numeric', () => {
+    expect(parseFetchArgs(['https://a.dev', '--wait', '3000']).wait).toBe(3000);
+    expect(parseFetchArgs(['https://a.dev', '--wait=1500']).wait).toBe(1500);
+    expect(parseFetchArgs(['https://a.dev', '--wait', 'soon']).wait).toBeUndefined();
   });
 
   test('--engine browser / firecrawl (space + equals forms)', () => {

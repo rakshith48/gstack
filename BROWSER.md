@@ -311,7 +311,7 @@ like every read. See also the `/web-search` skill.
 | Command | Description |
 |---------|-------------|
 | `search <query> [--limit N] [--scrape]` | Web search via Firecrawl. `--scrape` pulls each result's clean markdown inline. No browser fallback — needs a key. |
-| `fetch <url> [--html] [--links] [--engine firecrawl\|browser]` | URL → clean markdown via Firecrawl, auto-falling back to the local browser on failure/empty/no-key. `gstack-config web_engine` sets the default engine (auto\|firecrawl\|browser). |
+| `fetch <url> [--html] [--links] [--full] [--wait <ms>] [--engine firecrawl\|browser]` | URL → clean markdown via Firecrawl (PDF-aware; base64 images stripped), auto-falling back to the local browser on failure/empty/no-key. `--full` returns the whole page (skip main-content extraction — better for nav-heavy homepages); `--wait <ms>` for slow JS renders. `gstack-config web_engine` sets the default engine (auto\|firecrawl\|browser). |
 
 ### Snapshot
 
