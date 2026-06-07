@@ -15,6 +15,7 @@ import { TEMP_DIR } from './platform';
 import { inspectElement, formatInspectorResult, getModificationHistory } from './cdp-inspector';
 import { validateReadPath } from './path-security';
 import { stripLoneSurrogates } from './sanitize';
+import { firecrawlSearch } from './firecrawl-commands';
 // Re-export for backward compatibility (tests import from read-commands)
 export { validateReadPath } from './path-security';
 
@@ -108,6 +109,11 @@ export async function handleReadCommand(
   const target = session.getActiveFrameOrPage();
 
   switch (command) {
+    // Web (Firecrawl cloud) — independent of the local page; see firecrawl-commands.ts.
+    case 'search': {
+      return firecrawlSearch(args);
+    }
+
     case 'text': {
       return getCleanText(target);
     }
