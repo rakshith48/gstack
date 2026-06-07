@@ -13,16 +13,10 @@
 
 import type { Document, SearchResultWeb } from 'firecrawl';
 import type { TabSession } from './tab-session';
-import { getFirecrawl, firecrawlEnabled, getWebEngine, type WebEngine } from './firecrawl-client';
+import { getFirecrawl, firecrawlEnabled, getWebEngine, FIRECRAWL_INTEGRATION, type WebEngine } from './firecrawl-client';
 import { validateNavigationUrl } from './url-validation';
 import { getCleanText } from './read-commands';
 import { stripLoneSurrogates } from './sanitize';
-
-// NOTE: Firecrawl's `integration` field is a server-validated enum (dify, zapier,
-// langchain, crewai, cli, …). 'gstack' is not registered yet, so sending it makes
-// the API reject every call ("Invalid request body"). Once Firecrawl adds 'gstack'
-// to the enum, pass `integration: FIRECRAWL_INTEGRATION` on search/scrape for
-// usage attribution. Until then we omit it.
 
 const DEFAULT_SEARCH_LIMIT = 5;
 
@@ -104,6 +98,7 @@ export async function firecrawlSearch(args: string[]): Promise<string> {
   const fc = getFirecrawl(); // throws an actionable, secret-free error if no key
   const data = await fc.search(query, {
     limit,
+    integration: FIRECRAWL_INTEGRATION,
     ...(scrape
       ? { scrapeOptions: { formats: ['markdown'], onlyMainContent: true } }
       : {}),
@@ -205,6 +200,7 @@ async function fetchViaFirecrawl(url: string, opts: FetchOpts): Promise<Normaliz
     onlyMainContent: !opts.full,  // --full → whole page (skip main-content extraction)
     removeBase64Images: true,     // keep inline base64 data-URIs out of the markdown
     parsers: ['pdf'],             // parse PDF URLs to text instead of returning binary
+    integration: FIRECRAWL_INTEGRATION,
     ...(opts.wait !== undefined ? { waitFor: opts.wait } : {}),
   });
   return {

@@ -18,11 +18,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { resolveGstackHome } from './config';
 
-/**
- * Attribution tag for usage analytics. Reserved for when Firecrawl registers
- * 'gstack' in its server-side `integration` enum — until then, sending it makes
- * the API reject the request, so callers omit it (see firecrawl-commands.ts).
- */
+/** Attribution tag sent as `integration` on search/scrape for usage analytics. */
 export const FIRECRAWL_INTEGRATION = 'gstack';
 
 let _client: Firecrawl | null = null;
