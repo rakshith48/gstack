@@ -40,6 +40,11 @@ describe('parseSearchArgs', () => {
     expect(parseSearchArgs(['x', '--limit', '0']).limit).toBe(5);
   });
 
+  test('value-less --limit does not swallow the next flag', () => {
+    const parsed = parseSearchArgs(['rust', '--limit', '--scrape']);
+    expect(parsed).toEqual({ query: 'rust', limit: 5, scrape: true });
+  });
+
   test('empty args → empty query', () => {
     expect(parseSearchArgs([]).query).toBe('');
   });
@@ -72,6 +77,15 @@ describe('parseFetchArgs', () => {
     expect(parseFetchArgs(['https://a.dev', '--wait', '3000']).wait).toBe(3000);
     expect(parseFetchArgs(['https://a.dev', '--wait=1500']).wait).toBe(1500);
     expect(parseFetchArgs(['https://a.dev', '--wait', 'soon']).wait).toBeUndefined();
+  });
+
+  test('value-less --wait / --engine do not swallow the next flag', () => {
+    const p1 = parseFetchArgs(['https://a.dev', '--wait', '--links']);
+    expect(p1.wait).toBeUndefined();
+    expect(p1.links).toBe(true);
+    const p2 = parseFetchArgs(['https://a.dev', '--engine', '--full']);
+    expect(p2.engine).toBe('auto');
+    expect(p2.full).toBe(true);
   });
 
   test('--engine browser / firecrawl (space + equals forms)', () => {

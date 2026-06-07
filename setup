@@ -1466,6 +1466,7 @@ FIRECRAWL_PROMPT_MARKER="$HOME/.gstack/.firecrawl-prompted"
 _firecrawl_already_configured() {
   [ -n "${FIRECRAWL_API_KEY:-}" ] && return 0
   [ -f "$HOME/Library/Application Support/firecrawl-cli/credentials.json" ] && return 0
+  [ -f "${APPDATA:-$HOME/AppData/Roaming}/firecrawl-cli/credentials.json" ] && return 0
   [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/firecrawl-cli/credentials.json" ] && return 0
   local _fk
   _fk=$("$SOURCE_GSTACK_DIR/bin/gstack-config" get firecrawl_key 2>/dev/null || true)

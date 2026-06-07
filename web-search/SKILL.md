@@ -5,6 +5,7 @@ description: Search the web — real search results, each optionally scraped to 
 allowed-tools:
   - Bash
   - Read
+  - AskUserQuestion
 triggers:
   - search the web
   - look up

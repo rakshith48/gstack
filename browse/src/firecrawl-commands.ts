@@ -11,7 +11,7 @@
  *   fetch:  { url, title?, markdown, links?, engine }   (fetch lands in a later commit)
  */
 
-import type { Document, SearchResultWeb } from '@mendable/firecrawl-js';
+import type { Document, SearchResultWeb } from 'firecrawl';
 import type { TabSession } from './tab-session';
 import { getFirecrawl, firecrawlEnabled, getWebEngine, type WebEngine } from './firecrawl-client';
 import { validateNavigationUrl } from './url-validation';
@@ -39,6 +39,16 @@ interface ParsedSearchArgs {
   scrape: boolean;
 }
 
+/**
+ * The token after index `i` if it's a value (present and not another `--flag`),
+ * else undefined. Prevents a value-less flag from swallowing the next flag
+ * (e.g. `--limit --scrape` must not consume `--scrape` as the limit).
+ */
+function valueAt(args: string[], i: number): string | undefined {
+  const next = args[i + 1];
+  return next !== undefined && !next.startsWith('--') ? next : undefined;
+}
+
 /** Parse `search <query…> [--limit N] [--scrape]`. Positional tokens form the query. */
 export function parseSearchArgs(args: string[]): ParsedSearchArgs {
   let limit = DEFAULT_SEARCH_LIMIT;
@@ -50,8 +60,12 @@ export function parseSearchArgs(args: string[]): ParsedSearchArgs {
     if (a === '--scrape') {
       scrape = true;
     } else if (a === '--limit') {
-      const v = parseInt(args[++i] ?? '', 10);
-      if (!Number.isNaN(v) && v > 0) limit = v;
+      const next = valueAt(args, i);
+      if (next !== undefined) {
+        i++;
+        const v = parseInt(next, 10);
+        if (!Number.isNaN(v) && v > 0) limit = v;
+      }
     } else if (a.startsWith('--limit=')) {
       const v = parseInt(a.slice('--limit='.length), 10);
       if (!Number.isNaN(v) && v > 0) limit = v;
@@ -166,9 +180,9 @@ export function parseFetchArgs(args: string[]): ParsedFetchArgs {
     if (a === '--html') html = true;
     else if (a === '--links') links = true;
     else if (a === '--full') full = true;
-    else if (a === '--wait') setWait(args[++i]);
+    else if (a === '--wait') { const next = valueAt(args, i); if (next !== undefined) { i++; setWait(next); } }
     else if (a.startsWith('--wait=')) setWait(a.slice('--wait='.length));
-    else if (a === '--engine') setEngine(args[++i]);
+    else if (a === '--engine') { const next = valueAt(args, i); if (next !== undefined) { i++; setEngine(next); } }
     else if (a.startsWith('--engine=')) setEngine(a.slice('--engine='.length));
     else positional.push(a);
   }
@@ -242,8 +256,16 @@ export async function firecrawlFetch(args: string[], session: TabSession): Promi
   const opts: FetchOpts = { html, links, full, wait };
   const effective: WebEngine = engine !== 'auto' ? engine : getWebEngine();
 
+  // file:// is local-only: only the browser (safe-dir-guarded by validateNavigationUrl)
+  // can read it, and sending a local path to Firecrawl's cloud is pointless. Never
+  // route it there — even in auto mode with a key.
+  const isFileUrl = url.trim().toLowerCase().startsWith('file:');
+  if (isFileUrl && effective === 'firecrawl') {
+    throw new Error("Firecrawl can't fetch file:// URLs (it's a cloud service). Use --engine browser (the default).");
+  }
+
   let result: NormalizedFetchResult;
-  if (effective === 'browser') {
+  if (effective === 'browser' || isFileUrl) {
     result = await fetchViaBrowser(url, session, opts);
   } else if (effective === 'firecrawl') {
     // Explicitly forced: surface the actionable config error if no key; no fallback.

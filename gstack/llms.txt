@@ -167,7 +167,7 @@ Run with `browse <command> [args]`. Full reference: `browse/SKILL.md`.
 - `screenshot [--selector <css>] [--viewport] [--clip x,y,w,h] [--base64] [selector|@ref] [path]`: Save screenshot.
 
 ### Web
-- `fetch <url> [--html] [--links] [--full] [--wait <ms>] [--engine firecrawl|browser]`: URL → clean markdown via Firecrawl (PDF-aware), auto-falling back to the local browser on failure/empty/no-key.
+- `fetch <url> [--html] [--links] [--full] [--wait <ms>] [--engine firecrawl|browser]`: URL → clean markdown via Firecrawl (PDF-aware).
 - `search <query> [--limit N] [--scrape]`: Web search via Firecrawl.
 
 ## More
