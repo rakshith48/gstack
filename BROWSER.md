@@ -300,6 +300,19 @@ from `snapshot`, or `@c` refs from `snapshot -C`. Full table:
 | `scrape <images\|videos\|media> [--selector] [--dir] [--limit]` | Bulk download all media from page; writes `manifest.json` |
 | `archive [path]` | Save complete page as MHTML via CDP |
 
+### Web (Firecrawl cloud)
+
+Backed by Firecrawl's cloud API — web search and faithful URL→markdown that the
+local headless browser can't do alone. Requires a key: `FIRECRAWL_API_KEY`,
+`gstack-config set firecrawl_key fc-…`, or `npx firecrawl-cli login --method browser` (browser
+sign-in, no global install). Output is wrapped in the untrusted-content envelope
+like every read. See also the `/web-search` skill.
+
+| Command | Description |
+|---------|-------------|
+| `search <query> [--limit N] [--scrape]` | Web search via Firecrawl. `--scrape` pulls each result's clean markdown inline. No browser fallback — needs a key. |
+| `fetch <url> [--html] [--links] [--full] [--wait <ms>] [--engine firecrawl\|browser]` | URL → clean markdown via Firecrawl (PDF-aware; base64 images stripped), auto-falling back to the local browser on failure/empty/no-key. `--full` returns the whole page (skip main-content extraction — better for nav-heavy homepages); `--wait <ms>` for slow JS renders. `gstack-config web_engine` sets the default engine (auto\|firecrawl\|browser). |
+
 ### Snapshot
 
 | Command | Description |

@@ -94,7 +94,17 @@ guess wrong.
 
 ## Step 4 — Prototype phase
 
-No match. Drive the page using `$B` primitives:
+No match. Pick the right tool for the intent:
+
+- **Whole page as clean markdown** ("read this article/doc as markdown",
+  "get the text of <url>") → `$B fetch <url>`. Uses Firecrawl for faithful
+  markdown and auto-falls back to the local browser if Firecrawl can't reach
+  it (or no key is set). Add `--links` / `--html` as needed. Emit its JSON
+  and stop — no selector work required.
+- **Structured extraction** (specific lists/tables/fields, repeated rows) →
+  drive the page with `$B` primitives below.
+
+Drive the page using `$B` primitives:
 
 1. `$B goto <url>` — navigate to the target. The user's intent usually
    names a host or a URL; use it directly.

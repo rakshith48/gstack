@@ -267,6 +267,11 @@
       "lead": "Clear the freeze boundary set by /freeze, allowing edits to all directories again.",
       "routing": "Use when you want to widen edit scope without ending the session.\nUse when asked to \"unfreeze\", \"unlock edits\", \"remove freeze\", or\n\"allow all edits\".",
       "voice_line": null
+    },
+    "web-search": {
+      "lead": "Search the web — real search results, each optionally scraped to clean markdown inline so you can answer with citations instead of a bare list of links.",
+      "routing": "Use when asked to \"search the web\", \"look up\", \"find online\",\nor \"what's the latest on\". Needs a Firecrawl key (FIRECRAWL_API_KEY,\n`gstack-config set firecrawl_key`, or `npx firecrawl-cli login --method browser`); with no key,\nhand off to your assistant's own web search.",
+      "voice_line": null
     }
   }
 }
