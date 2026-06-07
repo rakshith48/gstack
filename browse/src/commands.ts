@@ -143,7 +143,7 @@ export const COMMAND_DESCRIPTIONS: Record<string, { category: string; descriptio
   'download': { category: 'Extraction', description: 'Download URL or media element to disk using browser cookies. Use --navigate for URLs that trigger browser downloads (CDN redirects, Content-Disposition, anti-bot protected sites)', usage: 'download <url|@ref> [path] [--base64] [--navigate]' },
   'scrape':   { category: 'Extraction', description: 'Bulk download all media from page. Writes manifest.json', usage: 'scrape <images|videos|media> [--selector sel] [--dir path] [--limit N]' },
   'archive':  { category: 'Extraction', description: 'Save complete page as MHTML via CDP', usage: 'archive [path]' },
-  // Web (Firecrawl cloud — requires FIRECRAWL_API_KEY / `gstack-config set firecrawl_key` / `npx firecrawl-cli login`)
+  // Web (Firecrawl cloud — requires FIRECRAWL_API_KEY / `gstack-config set firecrawl_key` / `npx firecrawl-cli login --method browser`)
   'search':   { category: 'Web', description: 'Web search via Firecrawl. --scrape also pulls clean markdown of each result. No browser fallback — needs a Firecrawl key.', usage: 'search <query> [--limit N] [--scrape]' },
   'fetch':    { category: 'Web', description: 'URL → clean markdown via Firecrawl, auto-falling back to the local browser on failure/empty/no-key. --engine forces firecrawl|browser.', usage: 'fetch <url> [--html] [--links] [--engine firecrawl|browser]' },
   // Visual

@@ -20,7 +20,7 @@ triggers:
 
 Use when asked to "search the web", "look up", "find online",
 or "what's the latest on". Needs a Firecrawl key (FIRECRAWL_API_KEY,
-`gstack-config set firecrawl_key`, or `npx firecrawl-cli login`); with no key,
+`gstack-config set firecrawl_key`, or `npx firecrawl-cli login --method browser`); with no key,
 hand off to your assistant's own web search.
 
 ## Preamble (run first)
@@ -767,7 +767,7 @@ enabled. Tell the user once, then fall back:
 
 > Web search in gstack uses Firecrawl, which isn't configured. I'll use my own
 > built-in web search for this. To get results pre-scraped to clean markdown
-> inline next time, run `npx firecrawl-cli login` (browser sign-in) or set
+> inline next time, run `npx firecrawl-cli login --method browser` or set
 > `FIRECRAWL_API_KEY`.
 
 Then answer the query using your assistant's native web search. Do **not** try

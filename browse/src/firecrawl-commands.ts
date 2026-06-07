@@ -124,7 +124,7 @@ interface NormalizedFetchResult {
  * instruction even inside the untrusted-content envelope.
  */
 const FIRECRAWL_FETCH_HINT =
-  'Fetched with the local browser. Firecrawl returns cleaner markdown for pages like this — `npx firecrawl-cli login` (or set FIRECRAWL_API_KEY) to enable.';
+  'Fetched with the local browser. Firecrawl returns cleaner markdown for pages like this — `npx firecrawl-cli login --method browser` (or set FIRECRAWL_API_KEY) to enable.';
 let browserFallbackHintShown = false;
 
 /** Test seam: reset the once-per-session hint flag. */

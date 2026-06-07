@@ -94,7 +94,7 @@ export function firecrawlEnabled(): boolean {
 export function firecrawlStatusLine(): string {
   return firecrawlEnabled()
     ? 'Firecrawl: configured (web search + clean fetch enabled)'
-    : 'Firecrawl: not configured — `npx firecrawl-cli login` for web search + cleaner fetch';
+    : 'Firecrawl: not configured — `npx firecrawl-cli login --method browser` for web search + cleaner fetch';
 }
 
 export type WebEngine = 'auto' | 'firecrawl' | 'browser';
@@ -118,7 +118,7 @@ export function getFirecrawl(): Firecrawl {
   if (!key) {
     throw new Error(
       'Firecrawl is not configured. Set FIRECRAWL_API_KEY, run ' +
-      '`gstack-config set firecrawl_key fc-…`, or `npx firecrawl-cli login` for browser sign-in.',
+      '`gstack-config set firecrawl_key fc-…`, or `npx firecrawl-cli login --method browser` for browser sign-in.',
     );
   }
   if (!_client) {

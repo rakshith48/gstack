@@ -304,7 +304,7 @@ from `snapshot`, or `@c` refs from `snapshot -C`. Full table:
 
 Backed by Firecrawl's cloud API — web search and faithful URL→markdown that the
 local headless browser can't do alone. Requires a key: `FIRECRAWL_API_KEY`,
-`gstack-config set firecrawl_key fc-…`, or `npx firecrawl-cli login` (browser
+`gstack-config set firecrawl_key fc-…`, or `npx firecrawl-cli login --method browser` (browser
 sign-in, no global install). Output is wrapped in the untrusted-content envelope
 like every read. See also the `/web-search` skill.
 

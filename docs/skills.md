@@ -914,7 +914,7 @@ when Firecrawl can't reach a page.
 
 **Setup.** Needs a Firecrawl key, resolved from (in order) `FIRECRAWL_API_KEY`,
 `gstack-config set firecrawl_key fc-…`, or a `firecrawl-cli` login
-(`npx firecrawl-cli login` — browser sign-in, no global install). With no key,
+(`npx firecrawl-cli login --method browser` — browser sign-in, no global install). With no key,
 `$B fetch` still works via the local browser and `/web-search` hands off to your
 assistant's own web search rather than scraping a search-engine results page (the
 brittle, bot-flagged path this skill exists to replace).
