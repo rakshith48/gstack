@@ -87,6 +87,18 @@ export function firecrawlEnabled(): boolean {
   return resolveFirecrawlKey() !== null;
 }
 
+export type WebEngine = 'auto' | 'firecrawl' | 'browser';
+
+/**
+ * The configured web engine for `$B fetch`: `gstack-config get web_engine`
+ * (auto | firecrawl | browser), defaulting to 'auto'. Unknown values fall back
+ * to 'auto'. A `--engine` flag on the command overrides this per call.
+ */
+export function getWebEngine(): WebEngine {
+  const v = readGstackConfigKey('web_engine');
+  return v === 'firecrawl' || v === 'browser' ? v : 'auto';
+}
+
 /**
  * The lazily-instantiated Firecrawl client.
  * Throws an actionable, secret-free error when no key is configured.

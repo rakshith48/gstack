@@ -6,7 +6,7 @@ import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { parseSearchArgs, normalizeWebResult, firecrawlSearch } from '../src/firecrawl-commands';
+import { parseSearchArgs, parseFetchArgs, normalizeWebResult, firecrawlSearch } from '../src/firecrawl-commands';
 import { _resetFirecrawlClient } from '../src/firecrawl-client';
 
 describe('parseSearchArgs', () => {
@@ -42,6 +42,48 @@ describe('parseSearchArgs', () => {
 
   test('empty args → empty query', () => {
     expect(parseSearchArgs([]).query).toBe('');
+  });
+});
+
+describe('parseFetchArgs', () => {
+  test('bare url → auto engine, no html/links', () => {
+    expect(parseFetchArgs(['https://a.dev'])).toEqual({
+      url: 'https://a.dev',
+      engine: 'auto',
+      html: false,
+      links: false,
+    });
+  });
+
+  test('--html and --links flags', () => {
+    expect(parseFetchArgs(['https://a.dev', '--html', '--links'])).toMatchObject({
+      html: true,
+      links: true,
+    });
+  });
+
+  test('--engine browser / firecrawl (space + equals forms)', () => {
+    expect(parseFetchArgs(['https://a.dev', '--engine', 'browser']).engine).toBe('browser');
+    expect(parseFetchArgs(['https://a.dev', '--engine=firecrawl']).engine).toBe('firecrawl');
+  });
+
+  test('invalid --engine value is ignored (stays auto)', () => {
+    expect(parseFetchArgs(['https://a.dev', '--engine', 'bogus']).engine).toBe('auto');
+  });
+
+  test('first positional is the url; flags are not', () => {
+    expect(parseFetchArgs(['--links', 'https://a.dev']).url).toBe('https://a.dev');
+  });
+
+  test('no url → empty string (handler raises usage)', () => {
+    expect(parseFetchArgs(['--html']).url).toBe('');
+  });
+});
+
+describe('firecrawlFetch', () => {
+  test('throws a usage error when no url is given', async () => {
+    const { firecrawlFetch } = await import('../src/firecrawl-commands');
+    await expect(firecrawlFetch(['--html'], {} as any)).rejects.toThrow(/Usage: browse fetch/);
   });
 });
 

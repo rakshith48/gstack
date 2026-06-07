@@ -17,7 +17,7 @@ export const READ_COMMANDS = new Set([
   'dialog', 'is',
   'inspect',
   'media', 'data',
-  'search',
+  'search', 'fetch',
 ]);
 
 export const WRITE_COMMANDS = new Set([
@@ -59,7 +59,7 @@ export const PAGE_CONTENT_COMMANDS = new Set([
   'ux-audit',
   // Firecrawl cloud results are untrusted external web content — envelope +
   // content-filter them on the same path as every DOM read.
-  'search',
+  'search', 'fetch',
   // snapshot emits aria tree with attacker-controlled aria-label strings.
   // The sidebar's system prompt pushes agents to run `$B snapshot` as the
   // primary read path, so unwrapped snapshot output is the biggest ingress
@@ -145,6 +145,7 @@ export const COMMAND_DESCRIPTIONS: Record<string, { category: string; descriptio
   'archive':  { category: 'Extraction', description: 'Save complete page as MHTML via CDP', usage: 'archive [path]' },
   // Web (Firecrawl cloud — requires FIRECRAWL_API_KEY / `gstack-config set firecrawl_key` / `npx firecrawl-cli login`)
   'search':   { category: 'Web', description: 'Web search via Firecrawl. --scrape also pulls clean markdown of each result. No browser fallback — needs a Firecrawl key.', usage: 'search <query> [--limit N] [--scrape]' },
+  'fetch':    { category: 'Web', description: 'URL → clean markdown via Firecrawl, auto-falling back to the local browser on failure/empty/no-key. --engine forces firecrawl|browser.', usage: 'fetch <url> [--html] [--links] [--engine firecrawl|browser]' },
   // Visual
   'screenshot': { category: 'Visual', description: 'Save screenshot. --selector targets a specific element (explicit flag form). Positional selectors starting with ./#/@/[ still work.', usage: 'screenshot [--selector <css>] [--viewport] [--clip x,y,w,h] [--base64] [selector|@ref] [path]' },
   'pdf':     { category: 'Visual', description: 'Save the current page as PDF. Supports page layout (--format, --width, --height, --margins, --margin-*), structure (--toc waits for Paged.js), branding (--header-template, --footer-template, --page-numbers), accessibility (--tagged, --outline), and --from-file <payload.json> for large payloads. Use --tab-id <N> to target a specific tab.', usage: 'pdf [path] [--format letter|a4|legal] [--width <dim> --height <dim>] [--margins <dim>] [--margin-top <dim> --margin-right <dim> --margin-bottom <dim> --margin-left <dim>] [--header-template <html>] [--footer-template <html>] [--page-numbers] [--tagged] [--outline] [--print-background] [--prefer-css-page-size] [--toc] [--tab-id <N>]  |  pdf --from-file <payload.json> [--tab-id <N>]' },

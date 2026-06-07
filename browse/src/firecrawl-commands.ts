@@ -12,7 +12,10 @@
  */
 
 import type { Document, SearchResultWeb } from '@mendable/firecrawl-js';
-import { getFirecrawl } from './firecrawl-client';
+import type { TabSession } from './tab-session';
+import { getFirecrawl, firecrawlEnabled, getWebEngine, type WebEngine } from './firecrawl-client';
+import { validateNavigationUrl } from './url-validation';
+import { getCleanText } from './read-commands';
 import { stripLoneSurrogates } from './sanitize';
 
 // NOTE: Firecrawl's `integration` field is a server-validated enum (dify, zapier,
@@ -97,4 +100,130 @@ export async function firecrawlSearch(args: string[]): Promise<string> {
     .filter((r) => r.url);
 
   return JSON.stringify({ query, engine: 'firecrawl', results }, null, 2);
+}
+
+// ─── fetch (URL → clean markdown, Firecrawl-first with browser fallback) ──────
+
+interface NormalizedFetchResult {
+  url: string;
+  title?: string;
+  markdown: string;
+  links?: string[];
+  html?: string;
+  engine: 'firecrawl' | 'browser';
+}
+
+interface FetchFormats {
+  html: boolean;
+  links: boolean;
+}
+
+interface ParsedFetchArgs extends FetchFormats {
+  url: string;
+  engine: WebEngine; // from --engine; 'auto' when unspecified
+}
+
+/** Parse `fetch <url> [--html] [--links] [--engine firecrawl|browser|auto]`. */
+export function parseFetchArgs(args: string[]): ParsedFetchArgs {
+  let engine: WebEngine = 'auto';
+  let html = false;
+  let links = false;
+  const positional: string[] = [];
+
+  const setEngine = (v: string | undefined): void => {
+    if (v === 'firecrawl' || v === 'browser' || v === 'auto') engine = v;
+  };
+
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === '--html') html = true;
+    else if (a === '--links') links = true;
+    else if (a === '--engine') setEngine(args[++i]);
+    else if (a.startsWith('--engine=')) setEngine(a.slice('--engine='.length));
+    else positional.push(a);
+  }
+
+  return { url: positional[0] ?? '', engine, html, links };
+}
+
+/** Firecrawl returned nothing usable (login wall, JS-gated SPA) → fall back. */
+function isEmptyMarkdown(md: string | undefined): boolean {
+  return !md || md.trim().length < 8;
+}
+
+async function fetchViaFirecrawl(url: string, opts: FetchFormats): Promise<NormalizedFetchResult> {
+  const formats: Array<'markdown' | 'links' | 'html'> = ['markdown'];
+  if (opts.links) formats.push('links');
+  if (opts.html) formats.push('html');
+
+  const doc = await getFirecrawl().scrape(url, { formats, onlyMainContent: true });
+  return {
+    url: doc.metadata?.sourceURL ?? url,
+    title: doc.metadata?.title ?? undefined,
+    markdown: stripLoneSurrogates(doc.markdown ?? ''),
+    links: opts.links ? doc.links : undefined,
+    html: opts.html && typeof doc.html === 'string' ? stripLoneSurrogates(doc.html) : undefined,
+    engine: 'firecrawl',
+  };
+}
+
+/**
+ * Browser fallback: navigate the active tab and extract cleaned text. The
+ * `markdown` field carries cleaned page text (not faithful markdown) — the
+ * `engine: 'browser'` flag signals that to consumers. Navigation is gated by
+ * validateNavigationUrl (same SSRF guard as `$B goto`).
+ */
+async function fetchViaBrowser(url: string, session: TabSession, opts: FetchFormats): Promise<NormalizedFetchResult> {
+  const normalized = await validateNavigationUrl(url);
+  const page = session.getPage();
+  await page.goto(normalized, { waitUntil: 'domcontentloaded', timeout: 15000 });
+
+  const title = await page.title().catch(() => undefined);
+  const markdown = stripLoneSurrogates(await getCleanText(page));
+  let links: string[] | undefined;
+  if (opts.links) {
+    links = await page.evaluate(() =>
+      [...document.querySelectorAll('a[href]')].map((a) => (a as HTMLAnchorElement).href),
+    );
+  }
+  const html = opts.html ? stripLoneSurrogates(await page.content()) : undefined;
+
+  return { url: page.url(), title, markdown, links, html, engine: 'browser' };
+}
+
+/**
+ * `$B fetch <url>` — URL → clean markdown via Firecrawl, with automatic browser
+ * fallback. Policy (the hybrid router): `--engine`/config force a single engine;
+ * otherwise (auto) try Firecrawl first when a key is configured and fall back to
+ * the local browser on throw or empty markdown; with no key, go straight to the
+ * browser (no nagging — the browser already fetches URLs well).
+ */
+export async function firecrawlFetch(args: string[], session: TabSession): Promise<string> {
+  const { url, engine, html, links } = parseFetchArgs(args);
+  if (!url) {
+    throw new Error('Usage: browse fetch <url> [--html] [--links] [--engine firecrawl|browser]');
+  }
+  const opts: FetchFormats = { html, links };
+  const effective: WebEngine = engine !== 'auto' ? engine : getWebEngine();
+
+  let result: NormalizedFetchResult;
+  if (effective === 'browser') {
+    result = await fetchViaBrowser(url, session, opts);
+  } else if (effective === 'firecrawl') {
+    // Explicitly forced: surface the actionable config error if no key; no fallback.
+    result = await fetchViaFirecrawl(url, opts);
+  } else if (!firecrawlEnabled()) {
+    result = await fetchViaBrowser(url, session, opts);
+  } else {
+    try {
+      const viaCloud = await fetchViaFirecrawl(url, opts);
+      result = isEmptyMarkdown(viaCloud.markdown)
+        ? await fetchViaBrowser(url, session, opts)
+        : viaCloud;
+    } catch {
+      result = await fetchViaBrowser(url, session, opts);
+    }
+  }
+
+  return JSON.stringify(result, null, 2);
 }
