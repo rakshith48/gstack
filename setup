@@ -1452,3 +1452,66 @@ fi
 if [ "$NO_TEAM_MODE" -eq 1 ] && [ -x "$SETTINGS_HOOK" ]; then
   "$SETTINGS_HOOK" remove-source --source plan-tune-cathedral 2>/dev/null || true
 fi
+
+# ─── Firecrawl web search (optional opt-in) ──────────────────────────
+# gstack's `$B search` / `$B fetch` (and the /web-search skill) use Firecrawl
+# for web search + clean URL→markdown. Offer a one-time, timed, default-skip
+# sign-in at install — the highest-intent moment — but never block, never nag,
+# and only when Firecrawl isn't already configured. Mirrors the plan-tune-hooks
+# prompt pattern above (TTY-gated, `read -t`, default-N, marker-remembered).
+FIRECRAWL_PROMPT_MARKER="$HOME/.gstack/.firecrawl-prompted"
+
+# True when a Firecrawl key is already resolvable (env / gstack-config / CLI login),
+# matching browse/src/firecrawl-client.ts — no point prompting an already-set-up user.
+_firecrawl_already_configured() {
+  [ -n "${FIRECRAWL_API_KEY:-}" ] && return 0
+  [ -f "$HOME/Library/Application Support/firecrawl-cli/credentials.json" ] && return 0
+  [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/firecrawl-cli/credentials.json" ] && return 0
+  local _fk
+  _fk=$("$SOURCE_GSTACK_DIR/bin/gstack-config" get firecrawl_key 2>/dev/null || true)
+  [ -n "$_fk" ] && return 0
+  return 1
+}
+
+if [ "$QUIET" -ne 1 ] && [ -t 0 ] && [ -t 1 ] \
+   && [ "${GSTACK_SKIP_FIRECRAWL:-0}" != "1" ] \
+   && [ ! -f "$FIRECRAWL_PROMPT_MARKER" ] \
+   && ! _firecrawl_already_configured; then
+  mkdir -p "$HOME/.gstack"
+  _FC_PROMPT_TIMEOUT=10
+  log ""
+  log "──────────────────────────────────────────────────────────"
+  log "Web search: enable Firecrawl? (optional)"
+  log "──────────────────────────────────────────────────────────"
+  log ""
+  log "gstack can use Firecrawl for web search and clean URL→markdown"
+  log "(the /web-search skill + \`\$B search\` / \`\$B fetch\`). Without it,"
+  log "fetch falls back to the local browser and web search is unavailable."
+  log ""
+  log "Signing in opens a browser (~30s). You can always do this later with:"
+  log "  npx firecrawl-cli login --method browser"
+  log ""
+  printf "Sign in to Firecrawl now? [y/N] (default: N, auto-skips in %ss): " "$_FC_PROMPT_TIMEOUT"
+  read -t "$_FC_PROMPT_TIMEOUT" -r FIRECRAWL_REPLY </dev/tty 2>/dev/null || FIRECRAWL_REPLY=""
+  case "$FIRECRAWL_REPLY" in
+    y|Y)
+      touch "$FIRECRAWL_PROMPT_MARKER"
+      log ""
+      log "Opening Firecrawl sign-in (browser)…"
+      # --method browser skips the CLI's browser-vs-manual menu; --yes skips the
+      # npx install confirm. Best-effort: a non-zero exit just means "do it later".
+      npx --yes firecrawl-cli login --method browser </dev/tty \
+        || log "Sign-in didn't complete — run \`npx firecrawl-cli login --method browser\` anytime."
+      ;;
+    n|N)
+      touch "$FIRECRAWL_PROMPT_MARKER"
+      log ""
+      log "Skipped. Enable web search later with: npx firecrawl-cli login --method browser"
+      ;;
+    *)
+      # Empty / timed out — don't persist a decline; offer again on next ./setup.
+      log ""
+      log "No response — skipped. Enable anytime with: npx firecrawl-cli login --method browser"
+      ;;
+  esac
+fi
