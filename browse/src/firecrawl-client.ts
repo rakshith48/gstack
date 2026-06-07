@@ -87,6 +87,16 @@ export function firecrawlEnabled(): boolean {
   return resolveFirecrawlKey() !== null;
 }
 
+/**
+ * One-line Firecrawl state for `$B status`. Reports configured vs not (never the
+ * key itself), and points unconfigured users at the lightest activation path.
+ */
+export function firecrawlStatusLine(): string {
+  return firecrawlEnabled()
+    ? 'Firecrawl: configured (web search + clean fetch enabled)'
+    : 'Firecrawl: not configured — `npx firecrawl-cli login` for web search + cleaner fetch';
+}
+
 export type WebEngine = 'auto' | 'firecrawl' | 'browser';
 
 /**

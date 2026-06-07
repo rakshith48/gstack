@@ -111,6 +111,25 @@ interface NormalizedFetchResult {
   links?: string[];
   html?: string;
   engine: 'firecrawl' | 'browser';
+  /** Subtle discovery hint, set at most once per session — see FIRECRAWL_FETCH_HINT. */
+  note?: string;
+}
+
+/**
+ * Shown at most once per daemon session: when `$B fetch` falls back to the local
+ * browser purely because no Firecrawl key is configured, note that Firecrawl
+ * yields cleaner markdown. Subtle and contextual — never on the happy path (key
+ * present) nor when the user explicitly chose `--engine browser`. A descriptive
+ * statement, not an imperative, so it reads as metadata rather than an
+ * instruction even inside the untrusted-content envelope.
+ */
+const FIRECRAWL_FETCH_HINT =
+  'Fetched with the local browser. Firecrawl returns cleaner markdown for pages like this — `npx firecrawl-cli login` (or set FIRECRAWL_API_KEY) to enable.';
+let browserFallbackHintShown = false;
+
+/** Test seam: reset the once-per-session hint flag. */
+export function _resetFetchHint(): void {
+  browserFallbackHintShown = false;
 }
 
 interface FetchFormats {
@@ -213,7 +232,13 @@ export async function firecrawlFetch(args: string[], session: TabSession): Promi
     // Explicitly forced: surface the actionable config error if no key; no fallback.
     result = await fetchViaFirecrawl(url, opts);
   } else if (!firecrawlEnabled()) {
+    // Auto mode + no key: the browser handles it, but Firecrawl would do better.
+    // Surface the upgrade once per session — the quality-gap discovery moment.
     result = await fetchViaBrowser(url, session, opts);
+    if (!browserFallbackHintShown) {
+      result.note = FIRECRAWL_FETCH_HINT;
+      browserFallbackHintShown = true;
+    }
   } else {
     try {
       const viaCloud = await fetchViaFirecrawl(url, opts);

@@ -13,6 +13,7 @@ import * as path from 'path';
 import {
   resolveFirecrawlKey,
   firecrawlEnabled,
+  firecrawlStatusLine,
   getFirecrawl,
   _resetFirecrawlClient,
 } from '../src/firecrawl-client';
@@ -82,6 +83,31 @@ describe('firecrawlEnabled', () => {
     process.env.FIRECRAWL_API_KEY = 'fc-on';
     _resetFirecrawlClient();
     expect(firecrawlEnabled()).toBe(true);
+  });
+});
+
+describe('firecrawlStatusLine', () => {
+  test('reports configured (never the key itself) when a key is present', () => {
+    process.env.FIRECRAWL_API_KEY = 'fc-secret-do-not-print';
+    _resetFirecrawlClient();
+    const line = firecrawlStatusLine();
+    expect(line).toContain('Firecrawl: configured');
+    expect(line).not.toContain('fc-secret-do-not-print');
+  });
+
+  test('points unconfigured users at firecrawl-cli login', () => {
+    // Deterministic only when the machine has no firecrawl-cli credentials.
+    const cliCreds =
+      process.platform === 'darwin'
+        ? path.join(os.homedir(), 'Library', 'Application Support', 'firecrawl-cli', 'credentials.json')
+        : process.platform === 'win32'
+          ? path.join(process.env.APPDATA || '', 'firecrawl-cli', 'credentials.json')
+          : path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config'), 'firecrawl-cli', 'credentials.json');
+    if (fs.existsSync(cliCreds)) return;
+    _resetFirecrawlClient();
+    const line = firecrawlStatusLine();
+    expect(line).toContain('not configured');
+    expect(line).toContain('firecrawl-cli login');
   });
 });
 

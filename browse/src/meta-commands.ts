@@ -5,6 +5,7 @@
 import type { BrowserManager } from './browser-manager';
 import { handleSnapshot } from './snapshot';
 import { getCleanText } from './read-commands';
+import { firecrawlStatusLine } from './firecrawl-client';
 import { READ_COMMANDS, WRITE_COMMANDS, META_COMMANDS, PAGE_CONTENT_COMMANDS, wrapUntrustedContent, canonicalizeCommand } from './commands';
 import { handleDomainSkillCommand } from './domain-skill-commands';
 import { handleSkillCommand } from './browser-skill-commands';
@@ -413,6 +414,7 @@ export async function handleMetaCommand(
         `URL: ${page.url()}`,
         `Tabs: ${tabs}`,
         `PID: ${process.pid}`,
+        firecrawlStatusLine(),
       ].join('\n');
     }
 
