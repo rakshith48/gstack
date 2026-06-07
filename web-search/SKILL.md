@@ -1,7 +1,7 @@
 ---
 name: web-search
 version: 1.0.0
-description: Search the web via Firecrawl — real search results, each optionally scraped to clean markdown inline so you can answer with citations instead of a bare list of links. (gstack)
+description: Search the web — real search results, each optionally scraped to clean markdown inline so you can answer with citations instead of a bare list of links. (gstack)
 allowed-tools:
   - Bash
   - Read
@@ -721,7 +721,7 @@ Replace `SKILL_NAME`, `OUTCOME`, and `USED_BROWSE` before running.
 
 Skills that run plan reviews (`/plan-*-review`, `/codex review`) include the EXIT PLAN MODE GATE blocking checklist at the end of the skill, which verifies the plan file ends with `## GSTACK REVIEW REPORT` before ExitPlanMode is called. Skills that don't run plan reviews (operational skills like `/ship`, `/qa`, `/review`) typically don't operate in plan mode and have no review report to verify; this footer is a no-op for them. Writing the plan file is the one edit allowed in plan mode.
 
-# /web-search — web search via Firecrawl
+# /web-search — search the web
 
 gstack has no native search engine of its own. This skill delegates search to
 Firecrawl's cloud API through the `$B search` primitive, which returns real
