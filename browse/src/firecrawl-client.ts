@@ -26,7 +26,7 @@ import { resolveGstackHome } from './config';
 export const FIRECRAWL_INTEGRATION = 'gstack';
 
 let _client: Firecrawl | null = null;
-let _resolvedKey: string | null | undefined; // undefined = not yet resolved
+let _clientKey: string | null = null; // the key _client was built with
 
 /**
  * Platform-specific firecrawl-cli credentials path. Mirrors
@@ -70,16 +70,18 @@ function readCliCredentialKey(): string | null {
 
 /**
  * Resolve the Firecrawl API key from env → gstack-config → firecrawl-cli creds.
- * Memoized after first resolution; pass force=true to re-resolve (tests).
+ *
+ * Re-resolved on every call (the reads are env + two small files) — deliberately
+ * NOT memoized, so a `firecrawl login` that happens after the daemon is already
+ * running takes effect on the very next command, with no `$B stop`/restart.
  */
-export function resolveFirecrawlKey(force = false): string | null {
-  if (!force && _resolvedKey !== undefined) return _resolvedKey;
+export function resolveFirecrawlKey(): string | null {
   const envKey = process.env.FIRECRAWL_API_KEY?.trim();
-  _resolvedKey =
+  return (
     (envKey || null) ??
     readGstackConfigKey('firecrawl_key') ??
-    readCliCredentialKey();
-  return _resolvedKey;
+    readCliCredentialKey()
+  );
 }
 
 /** True when a Firecrawl API key is configured (env, gstack-config, or CLI login). */
@@ -121,14 +123,17 @@ export function getFirecrawl(): Firecrawl {
       '`gstack-config set firecrawl_key fc-…`, or `npx firecrawl-cli login --method browser` for browser sign-in.',
     );
   }
-  if (!_client) {
+  // Rebuild the client if the key changed (e.g. user just logged in) so a
+  // long-running daemon doesn't keep using a stale client.
+  if (!_client || _clientKey !== key) {
     _client = new Firecrawl({ apiKey: key });
+    _clientKey = key;
   }
   return _client;
 }
 
-/** Test seam: reset the memoized client + key so the next call re-resolves. */
+/** Test seam: drop the cached client so the next getFirecrawl() rebuilds it. */
 export function _resetFirecrawlClient(): void {
   _client = null;
-  _resolvedKey = undefined;
+  _clientKey = null;
 }

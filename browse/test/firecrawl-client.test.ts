@@ -49,32 +49,32 @@ function writeConfig(line: string): void {
 describe('resolveFirecrawlKey', () => {
   test('returns the env key when FIRECRAWL_API_KEY is set', () => {
     process.env.FIRECRAWL_API_KEY = 'fc-env-123';
-    expect(resolveFirecrawlKey(true)).toBe('fc-env-123');
+    expect(resolveFirecrawlKey()).toBe('fc-env-123');
   });
 
   test('falls back to gstack-config firecrawl_key when env is unset', () => {
     writeConfig('firecrawl_key: fc-config-456');
-    expect(resolveFirecrawlKey(true)).toBe('fc-config-456');
+    expect(resolveFirecrawlKey()).toBe('fc-config-456');
   });
 
   test('env key takes precedence over gstack-config', () => {
     process.env.FIRECRAWL_API_KEY = 'fc-env-win';
     writeConfig('firecrawl_key: fc-config-lose');
-    expect(resolveFirecrawlKey(true)).toBe('fc-env-win');
+    expect(resolveFirecrawlKey()).toBe('fc-env-win');
   });
 
   test('ignores blank/whitespace env values', () => {
     process.env.FIRECRAWL_API_KEY = '   ';
     writeConfig('firecrawl_key: fc-config-used');
-    expect(resolveFirecrawlKey(true)).toBe('fc-config-used');
+    expect(resolveFirecrawlKey()).toBe('fc-config-used');
   });
 
-  test('memoizes until reset/force', () => {
+  test('re-resolves on every call (picks up a key added after startup, no restart)', () => {
     process.env.FIRECRAWL_API_KEY = 'fc-first';
-    expect(resolveFirecrawlKey(true)).toBe('fc-first');
+    expect(resolveFirecrawlKey()).toBe('fc-first');
+    // Simulate the user running `firecrawl login` while the daemon is live:
     process.env.FIRECRAWL_API_KEY = 'fc-second';
-    expect(resolveFirecrawlKey()).toBe('fc-first'); // cached
-    expect(resolveFirecrawlKey(true)).toBe('fc-second'); // forced re-resolve
+    expect(resolveFirecrawlKey()).toBe('fc-second'); // reflected immediately, no memo
   });
 });
 
@@ -127,12 +127,19 @@ describe('getFirecrawl', () => {
     expect(() => getFirecrawl()).toThrow(/Firecrawl is not configured/);
   });
 
-  test('returns a client when a key is present', () => {
+  test('returns a client when a key is present (same instance for same key)', () => {
     process.env.FIRECRAWL_API_KEY = 'fc-present';
     _resetFirecrawlClient();
     const client = getFirecrawl();
     expect(client).toBeDefined();
-    // memoized: same instance on second call
-    expect(getFirecrawl()).toBe(client);
+    expect(getFirecrawl()).toBe(client); // cached for the same key
+  });
+
+  test('rebuilds the client when the key changes (login mid-session)', () => {
+    process.env.FIRECRAWL_API_KEY = 'fc-old';
+    _resetFirecrawlClient();
+    const first = getFirecrawl();
+    process.env.FIRECRAWL_API_KEY = 'fc-new';
+    expect(getFirecrawl()).not.toBe(first); // new key → fresh client
   });
 });
