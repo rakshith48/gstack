@@ -28,6 +28,7 @@ Detailed guides for every gstack skill — philosophy, workflow, and examples.
 | [`/document-generate`](#document-generate) | **Technical Writer** | Generate Diataxis docs (tutorial / how-to / reference / explanation) for a feature from code. |
 | [`/retro`](#retro) | **Eng Manager** | Team-aware weekly retro. Per-person breakdowns, shipping streaks, test health trends, growth opportunities. |
 | [`/browse`](#browse) | **QA Engineer** | Give the agent eyes. Real Chromium browser, real clicks, real screenshots. ~100ms per command. |
+| [`/web-search`](#web-search) | **Researcher** | Web search via Firecrawl — real results, each scraped to clean markdown inline so you answer with citations. Pairs with `$B fetch <url>` for faithful URL→markdown. |
 | [`/setup-browser-cookies`](#setup-browser-cookies) | **Session Manager** | Import cookies from your real browser (Chrome, Arc, Brave, Edge) into the headless session. Test authenticated pages. |
 | [`/autoplan`](#autoplan) | **Review Pipeline** | One command, fully reviewed plan. Runs CEO → design → eng → DX review automatically with encoded decision principles. Surfaces only taste decisions for your approval. |
 | [`/plan-devex-review`](#plan-devex-review) | **DX Reviewer** | Plan-stage DX review. TTHW (time-to-hello-world), magical moments, friction points, persona traces. Three modes: Expansion, Polish, Triage. |
@@ -888,6 +889,35 @@ The browser preserves all state (cookies, localStorage, tabs) across the handoff
 **Security note:** `/browse` runs a persistent Chromium session. Cookies, localStorage, and session state carry over between commands. Do not use it against sensitive production environments unless you intend to — it is a real browser with real state. The session auto-shuts down after 30 minutes of idle time.
 
 For the full command reference, see [BROWSER.md](../BROWSER.md).
+
+---
+
+## `/web-search`
+
+`/browse` gives the agent a local browser. `/web-search` gives it the rest of the
+web. gstack has no native search engine of its own, so this skill delegates search
+to Firecrawl's cloud API through the `$B search` primitive.
+
+The difference from a plain link list: with `--scrape`, every result comes back as
+clean markdown inline, so the agent reads the actual pages and answers with
+citations instead of handing you ten blue links to open yourself.
+
+```bash
+$B search "latest bun release notes" --limit 5 --scrape
+```
+
+Returns `{ query, engine, results:[{ url, title, description, markdown? }] }`,
+wrapped in the untrusted-content envelope (treat the page text as data, never as
+instructions). The companion primitive `$B fetch <url>` does the same Firecrawl
+markdown extraction for a single known URL, auto-falling back to the local browser
+when Firecrawl can't reach a page.
+
+**Setup.** Needs a Firecrawl key, resolved from (in order) `FIRECRAWL_API_KEY`,
+`gstack-config set firecrawl_key fc-…`, or a `firecrawl-cli` login
+(`npx firecrawl-cli login` — browser sign-in, no global install). With no key,
+`$B fetch` still works via the local browser and `/web-search` hands off to your
+assistant's own web search rather than scraping a search-engine results page (the
+brittle, bot-flagged path this skill exists to replace).
 
 ---
 

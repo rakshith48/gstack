@@ -72,6 +72,7 @@ Invoke them by name (e.g., `/office-hours`).
 | Skill | What it does |
 |-------|-------------|
 | `/browse` | Headless browser — real Chromium, real clicks, ~100ms/command. |
+| `/web-search` | Web search via Firecrawl — results scraped to clean markdown inline. Pairs with `$B fetch`. |
 | `/open-gstack-browser` | Launch the visible GStack Browser with sidebar + stealth. |
 | `/setup-browser-cookies` | Import cookies from your real browser for authenticated testing. |
 | `/pair-agent` | Pair a remote AI agent (OpenClaw, Codex, etc.) with your browser. |
