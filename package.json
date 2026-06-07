@@ -45,6 +45,7 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^4.1.0",
+    "@mendable/firecrawl-js": "^4.25.2",
     "@ngrok/ngrok": "^1.7.0",
     "diff": "^7.0.0",
     "marked": "^18.0.2",
